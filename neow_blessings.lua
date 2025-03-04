@@ -15,7 +15,7 @@ function SMODS.INIT.NeowBlessings()
     local j_neow = {
         order = 151,  unlocked = true,   start_alerted = true, discovered = true,  blueprint_compat = true, eternal_compat = true, rarity = 1, cost = 2, name = "neow", pos = {x=0,y=0}, set = "Default", effect = "Base", cost_mult = 1.0, config = {}, atlas= mod_name
     }
-    
+
     G.localization.misc.quips.nb_1 = {"Greetings...", "Choose..."}
     init_localization()
 
@@ -171,7 +171,7 @@ function SMODS.INIT.NeowBlessings()
         ["Yorick"] = {effect = "Multiplicative Mult", rarity = "Legendary"},
         ["Chicot"] = {effect = "Effect", rarity = "Legendary"},
         ["Perkeo"] = {effect = "Effect", rarity = "Legendary"},
-    }    
+    }
     local blessings = {
         {
             key = "common_mult_joker",
@@ -217,7 +217,7 @@ function SMODS.INIT.NeowBlessings()
                 create_booster('arcana', 'mega')
                 G.FUNCS:exit_overlay_menu()
             end
-            
+
         },
         {
            key = "mega_celestial_pack",
@@ -269,7 +269,7 @@ function SMODS.INIT.NeowBlessings()
                 create_booster('buffoon', 'jumbo')
                 G.FUNCS:exit_overlay_menu()
             end
-        },          
+        },
     }
     local tooltips = {
         ['mega_arcana_pack'] = {
@@ -295,31 +295,64 @@ function SMODS.INIT.NeowBlessings()
         ['jumbo_buffoon_pack'] = {
                 "Choose 1 of up to",
                 "2 Joker cards"
-        },  
+        },
     }
     function create_joker(effect, rarity)
-        pool, pool_key = get_current_pool('Joker', rarity)
-        choices = {}
-        for k,v in pairs(pool) do
+        local pool, pool_key = get_current_pool('Joker', rarity)
+        if not pool then
+            sendDebugMessage("Error: No valid pool for Jokers with rarity " .. tostring(rarity))
+            return
+        end
+
+        local choices = {}
+        for k, v in pairs(pool) do
             if G.P_CENTERS[v] then
-                joker = joker_effects[G.P_CENTERS[v].name]
+                local joker = joker_effects[G.P_CENTERS[v].name]
                 if joker and (not effect or string.match(joker.effect, effect)) then
                     table.insert(choices, v)
                 end
             end
         end
-        key = pseudorandom_element(choices, pseudoseed(mod_name))
+
+        if #choices == 0 then
+            sendDebugMessage("Error: No valid Joker choices for effect " .. tostring(effect))
+            return
+        end
+
+        local key = pseudorandom_element(choices, pseudoseed(mod_name))
+        if not key then
+            sendDebugMessage("Error: Failed to generate valid Joker key")
+            return
+        end
+
         local card = create_card('Joker', G.jokers, nil, 0, nil, nil, key, nil)
+        if not card then
+            sendDebugMessage("Error: create_card() returned nil")
+            return
+        end
+
         card:add_to_deck()
         G.jokers:emplace(card)
         card:start_materialize()
-        G.GAME.used_jokers[key] = true       
+        G.GAME.used_jokers[key] = true
     end
 
     function create_booster(tag, type)
         local key = 'p_' .. tag .. '_' .. type .. '_1'
+        if not G.P_CENTERS[key] then
+            sendDebugMessage("Error: G.P_CENTERS does not contain key " .. key)
+            return
+        end
+
         local card = Card(G.play.T.x + G.play.T.w/2 - G.CARD_W*1.27/2,
-        G.play.T.y + G.play.T.h/2-G.CARD_H*1.27/2, G.CARD_W*1.27, G.CARD_H*1.27, G.P_CARDS.empty, G.P_CENTERS[key], {bypass_discovery_center = true, bypass_discovery_ui = true})
+            G.play.T.y + G.play.T.h/2 - G.CARD_H*1.27/2, G.CARD_W*1.27, G.CARD_H*1.27,
+            G.P_CARDS.empty, G.P_CENTERS[key], {bypass_discovery_center = true, bypass_discovery_ui = true})
+
+        if not card then
+            sendDebugMessage("Error: Failed to create booster card")
+            return
+        end
+
         card.cost = 0
         G.FUNCS.use_card({config = {ref_table = card}})
         card:start_materialize()
@@ -340,8 +373,12 @@ function SMODS.INIT.NeowBlessings()
     end
 
     function replace_jimbo_sprite()
-        -- remove old Jimbo
-        jimbo = G.BLESSINGS_JIMBO
+        local jimbo = G.BLESSINGS_JIMBO
+        if not jimbo or not jimbo.children or not jimbo.children.card then
+            sendDebugMessage("Error: Jimbo sprite is missing or not initialized")
+            return
+        end
+
         jimbo.children.card:remove()
         jimbo.children.card = Card(jimbo.T.x, jimbo.T.y, G.CARD_W, G.CARD_H, G.P_CARDS.empty, j_neow, {bypass_discovery_center = true})
         jimbo.children.card.states.visible = false
@@ -364,7 +401,7 @@ function SMODS.INIT.NeowBlessings()
         local o2Type = type(o2)
         if o1Type ~= o2Type then return false end
         if o1Type ~= 'table' then return false end
-    
+
         if not ignore_mt then
             local mt1 = getmetatable(o1)
             if mt1 and mt1.__eq then
@@ -372,9 +409,9 @@ function SMODS.INIT.NeowBlessings()
                 return o1 == o2
             end
         end
-    
+
         local keySet = {}
-    
+
         for key1, value1 in pairs(o1) do
             local value2 = o2[key1]
             if value2 == nil or equals(value1, value2, ignore_mt) == false then
@@ -382,7 +419,7 @@ function SMODS.INIT.NeowBlessings()
             end
             keySet[key1] = true
         end
-    
+
         for key2, _ in pairs(o2) do
             if not keySet[key2] then return false end
         end
@@ -393,7 +430,7 @@ function SMODS.INIT.NeowBlessings()
         buttons = {}
         blessings_indexes = random_n(4, 1, #blessings)
 
-        for i=1, 4 do 
+        for i=1, 4 do
             -- forced blessing index useful to debug blessing functions during development, otherwise pick at random
             j = forced_blessing_index and forced_blessing_index or blessings_indexes[i]
             -- checks if the tooltip exists in the blessings table
@@ -403,9 +440,9 @@ function SMODS.INIT.NeowBlessings()
                 if equals(blessings[j].tooltip, tooltips[blessings[j].key]) then
                     buttons[i] = {n=G.UIT.R, config={align = "cm", padding = 0.1} , nodes={
                         Blessings_UIBox_button{id = 'blessing_' .. i, label = {blessings[j].desc}, button = 'blessing_' .. i, minw = 8,
-                        on_demand_tooltip = { text = tooltips[blessings[j].key]} 
+                        on_demand_tooltip = { text = tooltips[blessings[j].key]}
                         }
-                    }   
+                    }
                 }
                 end
             else
@@ -417,34 +454,34 @@ function SMODS.INIT.NeowBlessings()
             end
             G.FUNCS['blessing_' .. i] = blessings[j].f
         end
-        
+
         G.FUNCS.overlay_menu{
             definition = createNeowBox(),
             config = {no_esc = true}
         }
-        
+
     end
 
     -- Custom function to create two separate elements on the overlay menu, the box containing the blessings options and the Neow card
     function createNeowBox()
-        
+
         -- todo: add exit button? or maybe remove the no_back flag. I personally prefer it without but let's see others opinion on this.
         t =  create_UIBox_generic_options({ contents = buttons, no_back=true})
         t.nodes[1] = {n=G.UIT.R, config={align = "cm", padding = 0.1}, nodes={
 
             -- First, the blessings box
-            {n=G.UIT.C, config={align = "tm", padding = 0.3}, nodes={ {n=G.UIT.R, config={align = "cm"}, 
+            {n=G.UIT.C, config={align = "tm", padding = 0.3}, nodes={ {n=G.UIT.R, config={align = "cm"},
                 nodes={
-                    {n=G.UIT.O, 
+                    {n=G.UIT.O,
                     -- todo: create localization strings
                     config={object = DynaText({string = {"Choose your blessing"}, colours = {G.C.MONEY},shadow = true, float = true, scale = 1.5, pop_in = 0.4, maxw = 6.5})}
-                    }}},t.nodes[1]}}, 
+                    }}},t.nodes[1]}},
 
             -- Second, Neow card
             {n=G.UIT.C, config={align = "cm", padding = 1}, nodes={
                 {n=G.UIT.R, config={align = "cm"}, nodes={
                     {n=G.UIT.O, config={padding = 0, id = 'jimbo_spot', object = Moveable(0,0,G.CARD_W*1.1, G.CARD_H*1.1)}},
-                }}, 
+                }},
             }}
             }
         }
@@ -452,9 +489,13 @@ function SMODS.INIT.NeowBlessings()
     end
 
     function draw_blessings_overlay()
-        -- G.SETTINGS.paused = true
         create_blessings_overlay()
-        
+
+        if not G.BLESSINGS_JIMBO then
+            sendDebugMessage("Error: G.BLESSINGS_JIMBO is nil")
+            return
+        end
+
         table.insert(G.I.POPUP, G.BLESSINGS_JIMBO)
         table.insert(G.OVERLAY_MENU.children, G.BLESSINGS_JIMBO)
 
@@ -462,15 +503,25 @@ function SMODS.INIT.NeowBlessings()
             trigger = 'after',
             delay = 0.5,
             func = function()
+                if not G.CONTROLLER or not G.BLESSINGS_JIMBO then
+                    sendDebugMessage("Error: Missing UI components for blessings")
+                    return false
+                end
+
                 G.CONTROLLER.interrupt.focus = true
                 G.BLESSINGS_JIMBO = Card_Character({x = 0, y = 5})
                 replace_jimbo_sprite()
+
                 local spot = G.OVERLAY_MENU:get_UIE_by_ID('jimbo_spot')
-                spot.config.object:remove()
-                spot.config.object = G.BLESSINGS_JIMBO
-                G.BLESSINGS_JIMBO.ui_object_updated = true
-                G.BLESSINGS_JIMBO:add_speech_bubble("nb_1", "tm", {quip=true})
-                G.BLESSINGS_JIMBO:say_stuff(5)
+                if spot and spot.config then
+                    spot.config.object:remove()
+                    spot.config.object = G.BLESSINGS_JIMBO
+                    G.BLESSINGS_JIMBO.ui_object_updated = true
+                    G.BLESSINGS_JIMBO:add_speech_bubble("nb_1", "tm", {quip=true})
+                    G.BLESSINGS_JIMBO:say_stuff(5)
+                else
+                    sendDebugMessage("Error: Unable to find 'jimbo_spot' UI element")
+                end
 
                 return true
             end
@@ -494,28 +545,28 @@ function SMODS.INIT.NeowBlessings()
         args.focus_args = args.focus_args or nil
         args.text_colour = args.text_colour or G.C.UI.TEXT_LIGHT
         local but_UIT = args.col == true and G.UIT.C or G.UIT.R
-      
+
         local but_UI_label = {}
-      
+
         local button_pip = nil
-        for k, v in ipairs(args.label) do 
-          if k == #args.label and args.focus_args and args.focus_args.set_button_pip then 
+        for k, v in ipairs(args.label) do
+          if k == #args.label and args.focus_args and args.focus_args.set_button_pip then
             button_pip ='set_button_pip'
           end
           table.insert(but_UI_label, {n=G.UIT.R, config={align = "cm", padding = 0, minw = args.minw, maxw = args.maxw}, nodes={
             {n=G.UIT.T, config={text = v, scale = args.scale, colour = args.text_colour, shadow = args.shadow, focus_args = button_pip and args.focus_args or nil, func = button_pip, ref_table = args.ref_table}}
           }})
         end
-      
-        if args.count then 
-          table.insert(but_UI_label, 
+
+        if args.count then
+          table.insert(but_UI_label,
           {n=G.UIT.R, config={align = "cm", minh = 0.4}, nodes={
             {n=G.UIT.T, config={scale = 0.35,text = args.count.tally..' / '..args.count.of, colour = {1,1,1,0.9}}}
           }}
           )
         end
-      
-        return 
+
+        return
         {n= but_UIT, config = {align = 'cm'}, nodes={
         {n= G.UIT.C, config={
             align = "cm",

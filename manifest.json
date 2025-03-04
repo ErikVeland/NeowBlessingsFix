@@ -1,7 +1,12 @@
 {
     "name": "NeowBlessings",
+    "id": "NeowBlessings",
     "version_number": "1.0.0",
     "website_url": "https://github.com/kjossul/NeowBlessings",
-    "description": "Choose between 4 blessings at the start of your run, inspired from Slay the Spire.",
-    "dependencies": []
+    "description": "Neow has transformed into a cute little card! This mod gives you 4 blessings at the start of your run, inspired by Slay the Spire.",
+    "dependencies": [
+        "Steamopollys-Steamodded-0.9.5"
+    ],
+    "game_version": "1.0.1o",
+    "mod_loader": "steamodded"
 }
